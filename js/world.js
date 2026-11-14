@@ -15,18 +15,36 @@ export const gx = (u) => -2.95 - u;
 export const gz = (v) => v - 8.65;
 const ST = { x0: gx(1.9), x1: gx(4.9), n: 10 };           // base e topo dos lances (10 degraus de 30 cm)
 
-// Altura do piso em (x, z) para quem está na altura y.
-export function floorY(x, z, y) {
-  if (x > gx(6.325) && x < gx(1.73) && z > gz(7.675) && z < gz(11.125)) {
-    if (x < ST.x1) return UP / 2;                                             // patamar
-    const step = (t) => (Math.min(ST.n - 1, Math.floor(t * ST.n)) + 1) * (UP / 2 / ST.n);
-    const t = (ST.x0 - x) / (ST.x0 - ST.x1);
-    if (z > gz(9.475)) return t <= 0 ? 0 : step(t);                           // primeiro lance, sai do foyer
-    return t <= 0 ? UP : UP / 2 + step(1 - t);                                // segundo lance, chega ao 2º pavimento
-  }
-  return y > 4 ? UP : 0;
+// foi o claude //
+// -------------------------------------------- // 
+
+// Superfícies pisáveis (topo de objetos) e lajes do 2º pavimento, preenchidas em buildWorld.
+const SURF = [];   // {x0, x1, z0, z1, h}
+const SLABS = [];  // {x0, x1, z0, z1}, piso em UP
+
+// Altura da escada em (x, z), ou null fora dela.
+function stairH(x, z) {
+  if (!(x > gx(6.325) && x < gx(1.73) && z > gz(7.675) && z < gz(11.125))) return null;
+  if (x < ST.x1) return UP / 2;                                               // patamar
+  const step = (t) => (Math.min(ST.n - 1, Math.floor(t * ST.n)) + 1) * (UP / 2 / ST.n);
+  const t = (ST.x0 - x) / (ST.x0 - ST.x1);
+  if (z > gz(9.475)) return t <= 0 ? 0 : step(t);                             // primeiro lance
+  return t <= 0 ? UP : UP / 2 + step(1 - t);                                  // segundo lance
 }
 
+// Altura do piso em (x, z) para quem está com os pés em y.
+// lim = quanto acima dos pés ainda vale subir (degrau, ou 0 para olhar só o que está embaixo).
+export function floorY(x, z, y, lim = 0) {
+  const top = y + lim;
+  let best = 0;
+  for (const s of SURF) if (s.h > best && s.h <= top && x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1) best = s.h;
+  for (const s of SLABS) if (UP > best && UP <= top && x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1) best = UP;
+  const e = stairH(x, z);
+  if (e !== null && e > best && e <= top) best = e;
+  return best;
+}
+
+// -------------------------------------------- // 
 let OX = 0;   // deslocamento em x aplicado a tudo o que for criado (usado para reposicionar trechos inteiros)
 
 export function merge(list) {
@@ -84,6 +102,7 @@ class Batch {
 
 export function buildWorld(scene, T, CFG) {
   const root = new THREE.Group(); scene.add(root);
+  SURF.length = 0; SLABS.length = 0;
   const bt = new Batch();
   const colliders = [], segs = [], segs1 = [], inter = [], mapRects = [], upRects = [];
   const r = rng(1996);
@@ -110,7 +129,11 @@ export function buildWorld(scene, T, CFG) {
   };
   M.pool.userData.order = 1; M.shade.userData.order = 1; M.glass.userData.order = 3; M.tint.userData.order = 3;
 
-  const col = (x0, z0, x1, z1, o = {}) => colliders.push({ x0: Math.min(x0, x1) + OX, x1: Math.max(x0, x1) + OX, z0: Math.min(z0, z1), z1: Math.max(z0, z1), wall: !!o.wall, lv: o.lv ?? 0 });
+  const col = (x0, z0, x1, z1, o = {}) => {
+    const c = { x0: Math.min(x0, x1) + OX, x1: Math.max(x0, x1) + OX, z0: Math.min(z0, z1), z1: Math.max(z0, z1), wall: !!o.wall, lv: o.lv ?? 0, top: o.top };
+    colliders.push(c);
+    if (o.top !== undefined) SURF.push({ x0: c.x0, x1: c.x1, z0: c.z0, z1: c.z1, h: o.top });
+  };
   const hot = (o) => inter.push({ ...o, x: o.x + OX });
 
   // Posiciona peças em um referencial local (x, y, z, giro em Y).
@@ -325,7 +348,7 @@ export function buildWorld(scene, T, CFG) {
   for (const X of [23.4, 25.4, 27.4, 29.4]) {
     bt.bb(M.table, X - 0.35, 0.72, 2.9, X + 0.35, 0.76, 7.4);
     for (const z of [2.95, 5.15, 7.35]) { bt.bb(M.metal, X - 0.32, 0, z - 0.02, X - 0.28, 0.72, z + 0.02); bt.bb(M.metal, X + 0.28, 0, z - 0.02, X + 0.32, 0.72, z + 0.02); }
-    col(X - 0.35, 2.9, X + 0.35, 7.4);
+    col(X - 0.35, 2.9, X + 0.35, 7.4, { top: 0.76 });
     for (let i = 0; i < 5; i++) {
       const z = 3.35 + i * 0.9, on = X === 29.4 && i === 2;
       bt.bb(M.dark, X - 0.12, 0.76, z - 0.1, X + 0.02, 0.78, z + 0.1); bt.bb(M.dark, X - 0.07, 0.78, z - 0.02, X - 0.03, 0.92, z + 0.02);
@@ -354,10 +377,12 @@ export function buildWorld(scene, T, CFG) {
     for (let z = -2.7; z < -1.42; z += 0.12) bt.bb(M.frame, x - 0.012, 0.09, z - 0.012, x + 0.012, 2.35, z + 0.012);
     col(x - 0.04, -2.85, x + 0.04, -1.38);
   }
+  // mesa redonda do dca //
+  // ------------------------------------ // 
   function roundTable(x, z) {
     const p = at(x, 0, z);
     p.cyl(M.white, 0.62, 0.62, 0.04, 0, 0.74, 0, 20); p.cyl(M.metal, 0.05, 0.05, 0.72, 0, 0.36, 0, 8); p.cyl(M.metal, 0.3, 0.32, 0.03, 0, 0.015, 0, 12);
-    col(x - 0.45, z - 0.45, x + 0.45, z + 0.45);
+    col(x - 0.45, z - 0.45, x + 0.45, z + 0.45, { top: 0.76 });
     const a0 = r() * 6;
     for (let i = 0; i < 3; i++) { const a = a0 + (i * Math.PI * 2) / 3; plasticChair(x + Math.sin(a) * 1.0, z + Math.cos(a) * 1.0, a + Math.PI); }
   }
@@ -459,6 +484,9 @@ export function buildWorld(scene, T, CFG) {
     quadB(M.ceil, u0, v0, u1, v1, 2.995, 0, false); quadB(M.ceil, u0, v0, u1, v1, UP + 2.995, 0, false);
     bbB(M.wallOut, u0, UP + 3.0, v0, u1, UP + 3.15, v1);
     upRects.push({ x0: gx(u1), z0: gz(v0), x1: gx(u0), z1: gz(v1) });
+
+    SLABS.push({ x0: gx(u1), z0: gz(v0), x1: gx(u0), z1: gz(v1) });
+
   }
   quadB(M.ceil, 1.73, 7.6, 6.4, 11.2, UP + 2.995, 0, false); bbB(M.wallOut, 1.73, UP + 3.0, 7.6, 6.4, UP + 3.15, 11.2);
   upRects.push({ x0: gx(6.4), z0: gz(7.6), x1: gx(1.73), z1: gz(11.2) });
@@ -513,12 +541,12 @@ export function buildWorld(scene, T, CFG) {
   // impressora do corredor do 2º pavimento e a mesa branca perto do cobogó
   { const pr = at(gx(4.2), UP, gz(4.4)); pr.box(M.beige, 0.6, 0.04, 0.5, 0, 0.7, 0); for (const [lx, lz] of [[-0.25, -0.2], [0.25, -0.2], [-0.25, 0.2], [0.25, 0.2]]) pr.box(M.wood, 0.04, 0.7, 0.04, lx, 0.35, lz);
     pr.box(M.metal, 0.44, 0.3, 0.42, 0, 0.87, 0); pr.box(M.dark, 0.46, 0.14, 0.44, 0, 1.09, 0); colB(3.9, 4.15, 4.5, 4.66, { lv: 1 }); }
-  bbB(M.white, 21.9, UP + 0.72, 4.18, 23.05, UP + 0.76, 4.75); for (const u of [21.95, 23.0]) bbB(M.metal, u - 0.02, UP, 4.2, u + 0.02, UP + 0.72, 4.24); colB(21.9, 4.18, 23.05, 4.75, { lv: 1 });
+  bbB(M.white, 21.9, UP + 0.72, 4.18, 23.05, UP + 0.76, 4.75); for (const u of [21.95, 23.0]) bbB(M.metal, u - 0.02, UP, 4.2, u + 0.02, UP + 0.72, 4.24); colB(21.9, 4.18, 23.05, 4.75, { lv: 1, top: UP + 0.76 });
   stool(gx(0.6), gz(6.4), UP); stool(gx(0.6), gz(10.4), UP);
 
   // ═════════════ Salas abertas do térreo ═════════════
   // Sala de Reuniões (6,25 x 3,85 m)
-  { bbB(M.oak, 1.7, 0.72, 1.45, 5.1, 0.76, 2.55); for (const [u, v] of [[1.9, 1.6], [4.9, 1.6], [1.9, 2.4], [4.9, 2.4]]) bbB(M.dark, u - 0.04, 0, v - 0.04, u + 0.04, 0.72, v + 0.04); colB(1.7, 1.45, 5.1, 2.55);
+  { bbB(M.oak, 1.7, 0.72, 1.45, 5.1, 0.76, 2.55); for (const [u, v] of [[1.9, 1.6], [4.9, 1.6], [1.9, 2.4], [4.9, 2.4]]) bbB(M.dark, u - 0.04, 0, v - 0.04, u + 0.04, 0.72, v + 0.04); colB(1.7, 1.45, 5.1, 2.55, { top: 0.76 });
     for (const u of [2.3, 3.4, 4.5]) { officeChair(gx(u), gz(0.95), 0); officeChair(gx(u), gz(3.05), Math.PI); }
     officeChair(gx(1.15), gz(2.0), -Math.PI / 2); officeChair(gx(5.65), gz(2.0), Math.PI / 2);
     bbB(M.dark, 6.26, 1.05, 1.3, 6.32, 1.85, 2.7); bbB(M.screen, 6.25, 1.09, 1.36, 6.262, 1.81, 2.64);
@@ -526,20 +554,20 @@ export function buildWorld(scene, T, CFG) {
     lampX(gx(3.4), gz(2.0)); pool(gx(5.6), gz(0.4), gx(1.0), gz(3.7));
     hot({ x: gx(3.4), z: gz(3.15), r: 1.2, label: 'Ler a pauta da reunião', kind: 'pauta' }); }
   // Copa (3,05 x 3,85 m)
-  { bbB(M.white, 6.5, 0, 0.15, 8.7, 0.86, 0.72); bbB(M.granite, 6.5, 0.86, 0.15, 8.72, 0.91, 0.78); colB(6.5, 0.15, 8.72, 0.78);
+  { bbB(M.white, 6.5, 0, 0.15, 8.7, 0.86, 0.72); bbB(M.granite, 6.5, 0.86, 0.15, 8.72, 0.91, 0.78); colB(6.5, 0.15, 8.72, 0.78, { top: 0.91 });
     bbB(M.white, 8.8, 0, 0.18, 9.5, 1.78, 0.88); bbB(M.metal, 8.84, 0.95, 0.88, 8.87, 1.55, 0.905); bbB(M.base, 8.8, 1.22, 0.88, 9.5, 1.235, 0.89); colB(8.8, 0.18, 9.5, 0.88);
     bbB(M.white, 6.65, 0.91, 0.22, 7.2, 1.2, 0.62); bbB(M.screen, 6.7, 0.95, 0.62, 7.04, 1.16, 0.63);          // micro-ondas
     bbB(M.dark, 7.45, 0.91, 0.22, 7.8, 1.32, 0.62); bbB(M.metal, 7.55, 0.91, 0.62, 7.7, 0.96, 0.72);            // cafeteira
     bbB(M.metal, 8.0, 0.905, 0.25, 8.6, 0.92, 0.65);                                                           // pia
     const w = at(gx(9.25), 0, gz(3.6)); w.box(M.white, 0.34, 1.0, 0.34, 0, 0.5, 0); w.cyl(M.water, 0.14, 0.14, 0.4, 0, 1.2, 0, 10); colB(9.08, 3.43, 9.42, 3.77);
-    const tb = at(gx(8.55), 0, gz(2.35)); tb.cyl(M.oak, 0.55, 0.55, 0.04, 0, 0.74, 0, 20); tb.cyl(M.white, 0.05, 0.05, 0.72, 0, 0.36, 0, 8); tb.cyl(M.white, 0.28, 0.3, 0.03, 0, 0.015, 0, 12); colB(8.15, 1.95, 8.95, 2.75);
+    const tb = at(gx(8.55), 0, gz(2.35)); tb.cyl(M.oak, 0.55, 0.55, 0.04, 0, 0.74, 0, 20); tb.cyl(M.white, 0.05, 0.05, 0.72, 0, 0.36, 0, 8); tb.cyl(M.white, 0.28, 0.3, 0.03, 0, 0.015, 0, 12); colB(8.15, 1.95, 8.95, 2.75, { top: 0.76 });
     for (let i = 0; i < 3; i++) { const an = 0.4 + i * 2.1; plasticChair(gx(8.55) + Math.sin(an) * 0.85, gz(2.35) + Math.cos(an) * 0.85, an + Math.PI); }
     bbB(M.door, 6.48, 0, 3.0, 6.53, 2.1, 3.92);
     lampX(gx(8.0), gz(2.0)); pool(gx(9.3), gz(0.8), gx(6.6), gz(3.8));
     hot({ x: gx(7.6), z: gz(1.2), r: 1.0, label: 'Tomar um café', kind: 'cafe' }); }
   // Sala de Professor 01 (aberta para visita)
   { bbB(M.orange, 0.08, 0.1, 13.1, 0.1, 3.0, 16.9);
-    bbB(M.oak, 1.2, 0.72, 15.3, 2.8, 0.76, 16.0); bbB(M.dark, 1.2, 0, 15.3, 1.26, 0.72, 16.0); bbB(M.dark, 2.74, 0, 15.3, 2.8, 0.72, 16.0); bbB(M.dark, 1.26, 0.25, 15.32, 2.74, 0.72, 15.36); colB(1.2, 15.3, 2.8, 16.0);
+    bbB(M.oak, 1.2, 0.72, 15.3, 2.8, 0.76, 16.0); bbB(M.dark, 1.2, 0, 15.3, 1.26, 0.72, 16.0); bbB(M.dark, 2.74, 0, 15.3, 2.8, 0.72, 16.0); bbB(M.dark, 1.26, 0.25, 15.32, 2.74, 0.72, 15.36); colB(1.2, 15.3, 2.8, 16.0, { top: 0.76 });
     bbB(M.dark, 1.85, 0.76, 15.5, 2.15, 0.78, 15.7); bbB(M.dark, 1.98, 0.78, 15.58, 2.02, 0.92, 15.62); bbB(M.dark, 1.65, 0.9, 15.56, 2.35, 1.3, 15.6); bbB(M.screen, 1.67, 0.92, 15.6, 2.33, 1.28, 15.605);
     officeChair(gx(2.0), gz(16.45), Math.PI);
     for (const [u, v, ry] of [[0.75, 14.3, -0.9], [0.8, 15.4, -1.3]]) { const c = at(gx(u), 0, gz(v), ry); c.box(M.tan, 0.56, 0.12, 0.52, 0, 0.42, 0); c.box(M.tan, 0.56, 0.36, 0.1, 0, 0.68, -0.24); c.box(M.dark, 0.05, 0.62, 0.52, -0.3, 0.31, 0); c.box(M.dark, 0.05, 0.62, 0.52, 0.3, 0.31, 0); }
@@ -576,7 +604,7 @@ export function buildWorld(scene, T, CFG) {
   for (let z = 3.2; z < 8.2; z += 0.75) { clump(-2.6, z, M.plant, 7, 0.85); if (r() < 0.6) clump(-2.3, z + 0.3, M.purple, 5, 0.35); }   // canteiro ao lado da saída
   for (let x = -25.5; x < -3.5; x += 2.2) clump(x, -9.3, r() < 0.5 ? M.plant : M.purple, 6, 0.5);
   for (let z = -7.5; z < 8; z += 1.8) clump(-27.2, z, M.plant, 6, 0.6);
-  for (const [x, z] of [[25, -27.5], [38, -27.5], [18, -20], [44, -18.5], [36, -32]]) { bt.bb(M.concrete, x - 0.7, 0, z - 0.7, x + 0.7, 0.12, z + 0.7); clump(x, z, M.purple, 8, 0.5); clump(x + 0.2, z - 0.2, M.plant, 6, 0.6); col(x - 0.7, z - 0.7, x + 0.7, z + 0.7); }
+  for (const [x, z] of [[25, -27.5], [38, -27.5], [18, -20], [44, -18.5], [36, -32]]) { col(x - 0.7, z - 0.7, x + 0.7, z + 0.7, { top: 0.12 }); clump(x, z, M.purple, 8, 0.5); clump(x + 0.2, z - 0.2, M.plant, 6, 0.6); col(x - 0.7, z - 0.7, x + 0.7, z + 0.7, { top: 0.12 }); }
 
   // Carros estacionados
   for (const [x, z, ry, c] of [[14, 16.5, Math.PI / 2, '#7a2c2c'], [19.6, 16.5, Math.PI / 2, '#dfe1e4'], [31, 16.5, Math.PI / 2, '#474c52'], [-10, 16.5, Math.PI / 2, '#5b6168'], [-15.6, 16.5, Math.PI / 2, '#8a8d91'], [-39, -10, 0, '#c2c5c9'], [-42.4, -10, 0, '#3d4a5c']]) {

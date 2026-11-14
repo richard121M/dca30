@@ -42,6 +42,7 @@ const S = {
   yaw: Math.PI, pitch: 0.2, dist: 3.5, camDist: 3.5, lastLook: -9,
   inCar: false, chips: 0, fotos: new Set(), t0: 0, time: 0, done: false,
   zone: '', doorK: 0, galK: 0,
+  vy: 0, grounded: true, eyeY: 0,
 };
 let player = null;
 
@@ -82,18 +83,34 @@ const npcs = npcSpecs.map((n) => {
 });
 
 // ───────────── Colisão ─────────────
-function resolveCircle(p, r, lv = 0) {
-  let moved = false;
+// 
+function resolveCircle(p, r, lv = 0, y =0) {
+ let moved = false;
   for (let it = 0; it < 2; it++) for (const c of colliders) {
     if (c.lv !== lv && c.lv !== 2) continue;
-    const cx = clamp(p.x, c.x0, c.x1), cz = clamp(p.z, c.z0, c.z1);
-    const dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
-    if (d2 >= r * r) continue;
-    moved = true;
-    if (d2 > 1e-9) { const d = Math.sqrt(d2); p.x = cx + (dx / d) * r; p.z = cz + (dz / d) * r; }
-    else {
-      const l = p.x - c.x0, rr = c.x1 - p.x, t = p.z - c.z0, b = c.z1 - p.z, m = Math.min(l, rr, t, b);
-      if (m === l) p.x = c.x0 - r; else if (m === rr) p.x = c.x1 + r; else if (m === t) p.z = c.z0 - r; else p.z = c.z1 + r;
+    if (c.top !== undefined && y >= c.top - 0.05) continue;   // já está em cima do objeto: não bloqueia
+    const cx = clamp(p.x, c.x0, c.x1); // decobrir qual o ponto mais próximo do centro do círculo
+    const cz = clamp(p.z, c.z0, c.z1); // decobrir qual o ponto mais próximo do centro do círculo
+
+    const dx = p.x - cx; // eixo x do vetor que aponta do ponto mais próximo do retângulo até o centro do círculo
+    const dz = p.z - cz; // eixo z do vetor que aponta do ponto mais próximo do retângulo até o centro do círculo
+   
+    const d2 = dx * dx + dz * dz; // distancia entre o player e esse ponto do retangulo
+    
+    if (d2 < r * r){ // se a distancia for maior que o raio² do círculo, não há colisão
+      moved = true;
+      if (d2 > 1e-9) { 
+        const d = Math.sqrt(d2); 
+        p.x = cx + (dx / d) * r; 
+        p.z = cz + (dz / d) * r; 
+      }else{
+        const l = p.x - c.x0;
+        const rr = c.x1 - p.x; 
+        const t = p.z - c.z0
+        const b = c.z1 - p.z
+        const m = Math.min(l, rr, t, b);
+        if (m === l) p.x = c.x0 - r; else if (m === rr) p.x = c.x1 + r; else if (m === t) p.z = c.z0 - r; else p.z = c.z1 + r;
+      }
     }
   }
   return moved;
@@ -293,6 +310,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Escape') { if (S.overlay) closeOverlay(); else if (S.started && !S.done) toggleMenu(S.mode === 'play'); return; }
   if (S.mode !== 'play') { if (e.code === 'Enter') start(); return; }
   if (e.code === 'KeyE' || e.code === 'Enter') { interact(); return; }
+  if (e.code === 'KeyP') { jump(); return; }
   if (e.code === 'Space') { if (S.overlay) closeOverlay(); else voice(); return; }
   if (e.code === 'KeyM') { setMuted(!S.muted); return; }
   keys.add(e.code);
@@ -373,12 +391,29 @@ function toggleMenu(open) {
 
 // ───────────── Atualização ─────────────
 
-// -------------------------- //
-var vel = {x: 0, y: 0, z: 0};
-var ace = {x: 0, y: 0, z: 0};
-var isFlor = false;
-var alturaChao = 0;
-// -------------------------- //
+const GRAV = 24;      // gravidade (m/s²)
+const JUMP_V = 9.4;   // velocidade do pulo: altura de ~1,5 m
+const STEP = 0.45;    // degrau que o personagem sobe andando, sem pular
+
+function jump() {
+  if (S.mode !== 'play' || S.overlay || S.inCar || !S.grounded) return;
+  S.vy = JUMP_V; S.grounded = false;
+  Snd.tone(360, 0, 0.1, 'triangle', 0.09); Snd.tone(540, 0.07, 0.09, 'triangle', 0.06);
+}
+
+function vertical(dt) {
+  if (S.grounded) {
+    const f = world.floorY(S.x, S.z, S.y, STEP);
+    if (f >= S.y - STEP) { S.y = f; S.vy = 0; return; }   // anda, sobe ou desce degraus
+    S.grounded = false; S.vy = 0;                         // saiu da borda: cai
+  }
+  S.vy -= GRAV * dt;
+  const ny = S.y + S.vy * dt;
+  const f = world.floorY(S.x, S.z, S.y, 0.02);            // superfície logo abaixo
+  if (S.vy <= 0 && ny <= f) { S.y = f; S.vy = 0; S.grounded = true; }
+  else S.y = ny;
+}
+
 
 function control(dt) {
   let ix = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0) + joy.x;
@@ -416,24 +451,9 @@ function control(dt) {
   // a movintacao do pulo //
   //console.log(world.floorY(S.x, S.z, S.y));
   ///=================================//
-  ace.y = -12;
-  if (S.y <= world.floorY(S.x, S.z, S.y)){
-    ace.y = 0;
-    vel.y = 0;
-    while (S.y+vel.y*dt < world.floorY(S.x, S.z, S.y)){
-      S.y += 0.1*dt;
-    }
-    isFlor = true;
-  }
-  if  ((keys.has('KeyP')) && isFlor){
-    ace.y = 450;
-    isFlor = false;
-  }
   
-  
-  vel.y += ace.y*dt;
+  vertical(dt);
 
-  S.y += vel.y*dt;
   ///=================================//
 
 
@@ -442,7 +462,7 @@ function control(dt) {
   if (mm > 0.05) {
     const p = { x: S.x + (mx / mm) * S.speed * dt, z: S.z + (mz / mm) * S.speed * dt };
 
-    resolveCircle(p, 0.32, S.y > 1.9 ? 1 : 0); S.x = p.x; S.z = p.z;
+    resolveCircle(p, 0.32, S.y > 1.9 ? 1 : 0, S.y); S.x = p.x; S.z = p.z;
     S.heading += angDiff(Math.atan2(mx, mz), S.heading) * Math.min(1, dt * 12);
     if (iy > -0.3 && S.time - S.lastLook > 0.9 && !look) S.yaw += angDiff(Math.atan2(-mx, -mz), S.yaw) * Math.min(1, dt * 1.5);
   }
@@ -494,6 +514,7 @@ function update(dt) {
     camera.position.set(32 + Math.sin(a) * 22, 6.5 + Math.sin(a * 1.7) * 1.2, -31 + Math.cos(a * 1.3) * 3.5);
     camera.lookAt(30, 2.2, -6);
   } else {
+    S.eyeY += (S.y - S.eyeY) * Math.min(1, dt * 10);
     const ty = S.y + (S.inCar ? 1.5 : S.camH), dist = S.dist, lv = S.y > 1.9 ? 1 : 0;
     const cp = Math.cos(S.pitch), fx = -Math.sin(S.yaw), fz = -Math.cos(S.yaw);
     const t = rayWalls(S.x, S.z, -fx * dist * cp, -fz * dist * cp, lv);

@@ -372,6 +372,13 @@ function toggleMenu(open) {
 }
 
 // ───────────── Atualização ─────────────
+
+// -------------------------- //
+var vel = {x: 0, y: 0, z: 0};
+var ace = {x: 0, y: 0, z: 0};
+var isFlor = false;
+// -------------------------- //
+
 function control(dt) {
   let ix = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0) + joy.x;
   let iy = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) + joy.y;
@@ -403,6 +410,27 @@ function control(dt) {
   if (m > 1) { ix /= m; iy /= m; }
   const run = keys.has('ShiftLeft') || keys.has('ShiftRight') || Math.hypot(joy.x, joy.y) > 0.92;
   const mx = fx * iy + rx * ix, mz = fz * iy + rz * ix, mm = Math.hypot(mx, mz);
+
+
+  // a movintacao do pulo //
+  
+  ///=================================//
+  ace.y = -0.01;
+  if (S.y <= 0){
+    ace.y = 0;
+    vel.y = 0;
+    isFlor = true;
+  }
+  if  ((keys.has('KeyP')) && isFlor){
+    ace.y = 0.25;
+    isFlor = false;
+  }
+
+  vel.y += ace.y;
+  S.y += vel.y;
+  ///=================================//
+
+
   const sp = mm > 0.05 ? (run ? 6.4 : 3.5) * Math.min(1, mm) * (S.time < S.boost ? 1.4 : 1) : 0;
   S.speed += (sp - S.speed) * Math.min(1, dt * 12);
   if (mm > 0.05) {

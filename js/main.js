@@ -377,6 +377,7 @@ function toggleMenu(open) {
 var vel = {x: 0, y: 0, z: 0};
 var ace = {x: 0, y: 0, z: 0};
 var isFlor = false;
+var alturaChao = 0;
 // -------------------------- //
 
 function control(dt) {
@@ -413,21 +414,26 @@ function control(dt) {
 
 
   // a movintacao do pulo //
-  
+  //console.log(world.floorY(S.x, S.z, S.y));
   ///=================================//
-  ace.y = -0.01;
-  if (S.y <= 0){
+  ace.y = -12;
+  if (S.y <= world.floorY(S.x, S.z, S.y)){
     ace.y = 0;
     vel.y = 0;
+    while (S.y+vel.y*dt < world.floorY(S.x, S.z, S.y)){
+      S.y += 0.1*dt;
+    }
     isFlor = true;
   }
   if  ((keys.has('KeyP')) && isFlor){
-    ace.y = 0.25;
+    ace.y = 450;
     isFlor = false;
   }
+  
+  
+  vel.y += ace.y*dt;
 
-  vel.y += ace.y;
-  S.y += vel.y;
+  S.y += vel.y*dt;
   ///=================================//
 
 
@@ -435,6 +441,7 @@ function control(dt) {
   S.speed += (sp - S.speed) * Math.min(1, dt * 12);
   if (mm > 0.05) {
     const p = { x: S.x + (mx / mm) * S.speed * dt, z: S.z + (mz / mm) * S.speed * dt };
+
     resolveCircle(p, 0.32, S.y > 1.9 ? 1 : 0); S.x = p.x; S.z = p.z;
     S.heading += angDiff(Math.atan2(mx, mz), S.heading) * Math.min(1, dt * 12);
     if (iy > -0.3 && S.time - S.lastLook > 0.9 && !look) S.yaw += angDiff(Math.atan2(-mx, -mz), S.yaw) * Math.min(1, dt * 1.5);
@@ -449,7 +456,6 @@ function update(dt) {
   if (playing && !S.overlay) control(dt); else if (S.inCar) { car.v *= 1 - Math.min(1, dt * 3); Snd.engine(playing, car.v); }
 
   // Jogador e carro
-  if (!S.inCar) S.y += (world.floorY(S.x, S.z, S.y) - S.y) * Math.min(1, dt * 16);
   if (player) {
     player.group.position.set(S.x, FLOOR + S.y, S.z); player.group.rotation.y = S.heading;
     const s = player.animate(dt, S.inCar ? 0 : S.speed);

@@ -24,7 +24,7 @@ export function floorY(x, z, y) {
     if (z > gz(9.475)) return t <= 0 ? 0 : step(t);                           // primeiro lance, sai do foyer
     return t <= 0 ? UP : UP / 2 + step(1 - t);                                // segundo lance, chega ao 2º pavimento
   }
-  return y > 1.9 ? UP : 0;
+  return y > 4 ? UP : 0;
 }
 
 let OX = 0;   // deslocamento em x aplicado a tudo o que for criado (usado para reposicionar trechos inteiros)

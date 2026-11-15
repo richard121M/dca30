@@ -1,5 +1,5 @@
 // DCA 30 Anos · laço principal, controles, câmera, HUD, radar e som.
-import * as THREE from '../vendor/three.min.js';
+import * as THREE from  'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.187.0/three.module.min.js';
 import { CONFIG, PERSONAGENS, BICHOS, FALAS, PORTAS_TRANCADAS, GALERIA, FOTOS, CHIPS, VOZES, REACOES } from './config.js';
 import { makeTextures } from './textures.js';
 import { buildWorld, merge } from './world.js';

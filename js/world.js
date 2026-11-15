@@ -2,7 +2,10 @@
 // Bloco dos professores e foyer: medidas da planta de arquitetura (prancha ARQ 01/03, escala 1/50).
 // Galeria (corredor, LABGRAD, hall de entrada): reconstruída a partir dos vídeos, pois não consta nas pranchas.
 // Eixos do jogo: +x aponta para o oeste real e +z para o norte real (o mundo está girado 180 graus em relação à planta).
-import * as THREE from '../vendor/three.min.js';
+
+
+// pegando o three.js de um repositorio online
+import * as THREE from  'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.187.0/three.module.min.js';
 import { rng } from './textures.js';
 import { makeCar } from './actors.js';
 

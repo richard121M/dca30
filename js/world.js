@@ -5,7 +5,7 @@
 
 
 // pegando o three.js de um repositorio online
-import * as THREE from  'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.187.0/three.module.min.js';
+import * as THREE from 'three';
 import { rng } from './textures.js';
 import { makeCar } from './actors.js';
 

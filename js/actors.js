@@ -1,5 +1,5 @@
 // Personagens (jogador e figurantes) e carros, todos montados com caixas.
-import * as THREE from  'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.187.0/three.module.min.js';
+import * as THREE from 'three';
 
 const matCache = new Map();
 function mat(color, extra) {

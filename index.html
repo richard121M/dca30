@@ -119,6 +119,18 @@ h1 { margin: 0; font: italic 700 clamp(30px, 8vw, 40px)/1 var(--font-display); l
 @media (max-height: 520px) { #radar { width: 104px; height: 104px; } .panel { gap: 12px; } }
 @media (prefers-reduced-motion: reduce) { #chips.pulse { animation: none; } #zone { transition: none; } }
 </style>
+
+<!-- importando a versao mais recente do Three.js -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"
+  }
+}
+</script>
+<!-- ########################################### -->
+
 </head>
 <body>
 <canvas id="game" tabindex="0" aria-label="Cena 3D do prédio do DCA"></canvas>

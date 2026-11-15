@@ -1,5 +1,5 @@
 // Texturas procedurais desenhadas em canvas. Nada de arquivos externos, tudo nasce aqui.
-import * as THREE from  'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.187.0/three.module.min.js';
+import * as THREE from 'three';
 
 export function rng(seed) {
   let a = seed >>> 0;

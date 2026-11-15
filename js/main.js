@@ -143,11 +143,11 @@ const loader = new GLTFLoader();
 
 
 loader.load(
-   `./modelos/jetpack2.glb`,
+   `./modelos/cenario_dca.glb`,
    function (gltf) {
 //     //If the file is loaded, add it to the scene
      let objecte = gltf.scene;
-     objecte.position.set(10, 1, -10); 
+     objecte.position.set(0, 0, 0); 
      scene.add(objecte);
    },
    function (xhr) {

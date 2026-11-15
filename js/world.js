@@ -104,7 +104,7 @@ class Batch {
 }
 
 export function buildWorld(scene, T, CFG) {
-  const root = new THREE.Group(); scene.add(root);
+  // const root = new THREE.Group(); scene.add(root);
   SURF.length = 0; SLABS.length = 0;
   const bt = new Batch();
   const colliders = [], segs = [], segs1 = [], inter = [], mapRects = [], upRects = [];
@@ -154,7 +154,7 @@ export function buildWorld(scene, T, CFG) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new Mat({ map, transparent: !!o.alpha, side: o.double ? THREE.DoubleSide : THREE.FrontSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8 }));
     m.position.set(x + (o.parent ? 0 : OX), y, z);
     if (o.flat) { m.rotation.x = -Math.PI / 2; m.rotation.z = ry; } else m.rotation.y = ry;
-    (o.parent || root).add(m);
+    // (o.parent || root).add(m);
     return m;
   }
 
@@ -440,11 +440,14 @@ export function buildWorld(scene, T, CFG) {
   lampX(-1.5, 0); pool(-3.4, -1.9, 0.4, 1.9); lampZ(-3.9, -0.1);
   for (let i = 0; i < 3; i++) bt.bb(M.glassDark, -1.75 + i * 0.52, 2.22, 2.465, -1.3 + i * 0.52, 2.62, 2.635);
   bt.bb(M.roof, -2.6, 2.55, 2.55, 0, 2.62, 3.9);                                                       // marquise da saída
-  const exitL = new THREE.Group(), exitR = new THREE.Group(); exitL.position.set(-1.82, 0, 2.55); exitR.position.set(-0.23, 0, 2.55); root.add(exitL, exitR);
-  { const a = new THREE.Mesh(new THREE.BoxGeometry(0.79, 2.08, 0.05), M.door); a.position.set(0.4, 1.04, 0); exitL.add(a);
-    const b = new THREE.Mesh(new THREE.BoxGeometry(0.79, 2.08, 0.05), M.door); b.position.set(-0.4, 1.04, 0); exitR.add(b);
-    decal(T.exitPaper, 0.5, 0.66, -0.4, 1.5, -0.03, Math.PI, { parent: exitR }); decal(T.exitPaper, 0.5, 0.66, -0.4, 1.5, 0.03, 0, { parent: exitR }); }
-  decal(T.access, 1.1, 1.1, -1.4, 0.03, 9.5, 0, { flat: true });
+  // const exitL = new THREE.Group(), exitR = new THREE.Group(); 
+  // exitL.position.set(-1.82, 0, 2.55); 
+  // exitR.position.set(-0.23, 0, 2.55); 
+  // root.add(exitL, exitR);
+  // { const a = new THREE.Mesh(new THREE.BoxGeometry(0.79, 2.08, 0.05), M.door); a.position.set(0.4, 1.04, 0); exitL.add(a);
+    // const b = new THREE.Mesh(new THREE.BoxGeometry(0.79, 2.08, 0.05), M.door); b.position.set(-0.4, 1.04, 0); exitR.add(b);
+    // decal(T.exitPaper, 0.5, 0.66, -0.4, 1.5, -0.03, Math.PI, { parent: exitR }); decal(T.exitPaper, 0.5, 0.66, -0.4, 1.5, 0.03, 0, { parent: exitR }); }
+  // decal(T.access, 1.1, 1.1, -1.4, 0.03, 9.5, 0, { flat: true });
 
   // ═════════════ Bloco dos professores: paredes dos dois pavimentos ═════════════
   const facade = (lvl, out) => [1.6, 4.8, 8.0, 15.2, 18.4, 21.6].map((c) => ({ a: c - 0.75, b: c + 0.75, y0: 0.9, y1: 2.3, kind: 'dark', ac: lvl === 0 && c > 10, out }));
@@ -610,10 +613,10 @@ export function buildWorld(scene, T, CFG) {
   for (const [x, z] of [[25, -27.5], [38, -27.5], [18, -20], [44, -18.5], [36, -32]]) { col(x - 0.7, z - 0.7, x + 0.7, z + 0.7, { top: 0.12 }); clump(x, z, M.purple, 8, 0.5); clump(x + 0.2, z - 0.2, M.plant, 6, 0.6); col(x - 0.7, z - 0.7, x + 0.7, z + 0.7, { top: 0.12 }); }
 
   // Carros estacionados
-  for (const [x, z, ry, c] of [[14, 16.5, Math.PI / 2, '#7a2c2c'], [19.6, 16.5, Math.PI / 2, '#dfe1e4'], [31, 16.5, Math.PI / 2, '#474c52'], [-10, 16.5, Math.PI / 2, '#5b6168'], [-15.6, 16.5, Math.PI / 2, '#8a8d91'], [-39, -10, 0, '#c2c5c9'], [-42.4, -10, 0, '#3d4a5c']]) {
-    const car = makeCar(c, { shadow: T.shadow }); car.group.position.set(x, 0.02, z); car.group.rotation.y = ry; root.add(car.group);
-    ry ? col(x - 2.15, z - 0.95, x + 2.15, z + 0.95) : col(x - 0.95, z - 2.15, x + 0.95, z + 2.15);
-  }
+  // for (const [x, z, ry, c] of [[14, 16.5, Math.PI / 2, '#7a2c2c'], [19.6, 16.5, Math.PI / 2, '#dfe1e4'], [31, 16.5, Math.PI / 2, '#474c52'], [-10, 16.5, Math.PI / 2, '#5b6168'], [-15.6, 16.5, Math.PI / 2, '#8a8d91'], [-39, -10, 0, '#c2c5c9'], [-42.4, -10, 0, '#3d4a5c']]) {
+    // const car = makeCar(c, { shadow: T.shadow }); car.group.position.set(x, 0.02, z); car.group.rotation.y = ry; root.add(car.group);
+    // ry ? col(x - 2.15, z - 0.95, x + 2.15, z + 0.95) : col(x - 0.95, z - 2.15, x + 0.95, z + 2.15);
+  // }
   { const p = at(4, 0, 22); p.cyl(M.metal, 0.07, 0.11, 9, 0, 4.5, 0, 8); p.box(M.metal, 1.6, 0.06, 0.06, 0, 9, 0); p.box(M.white, 0.5, 0.1, 0.24, -0.8, 8.95, 0); p.box(M.white, 0.5, 0.1, 0.24, 0.8, 8.95, 0); col(3.88, 21.88, 4.12, 22.12); }
 
   // Cerca viva nos limites do mapa
@@ -630,7 +633,7 @@ export function buildWorld(scene, T, CFG) {
     const g = new THREE.SphereGeometry(1, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2); g.scale(R, H, R); g.translate(x, -1, z); bt.add(M.hill, g);
   }
 
-  bt.build(root);
+  // bt.build(root);
 
   const sky = new THREE.Mesh(new THREE.SphereGeometry(520, 32, 16), new THREE.MeshBasicMaterial({ map: T.sky, side: THREE.BackSide, fog: false, depthWrite: false }));
   sky.renderOrder = -1; scene.add(sky);
@@ -662,9 +665,9 @@ export function buildWorld(scene, T, CFG) {
   return {
     colliders, segs, segs1, inter, mapRects, upRects, zone, indoor, sky, floorY,
     update(dt, x, z) {
-      const near = Math.hypot(x + 1.02, z - 2.55) < 2.5 ? 1 : 0;
-      doorOpen += (near - doorOpen) * Math.min(1, dt * 5);
-      exitL.rotation.y = -doorOpen * 1.6; exitR.rotation.y = doorOpen * 1.6;
+      // const near = Math.hypot(x + 1.02, z - 2.55) < 2.5 ? 1 : 0;
+      // doorOpen += (near - doorOpen) * Math.min(1, dt * 5);
+      // exitL.rotation.y = -doorOpen * 1.6; exitR.rotation.y = doorOpen * 1.6;
     },
   };
 }

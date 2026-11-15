@@ -143,7 +143,7 @@ const loader = new GLTFLoader();
 
 
 loader.load(
-   `./formadoida.glb`,
+   `./modelos/jetpack2.glb`,
    function (gltf) {
 //     //If the file is loaded, add it to the scene
      let objecte = gltf.scene;

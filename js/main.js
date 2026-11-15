@@ -5,6 +5,11 @@ import { makeTextures } from './textures.js';
 import { buildWorld, merge } from './world.js';
 import { makeCharacter, makeAnimal, makeCar } from './actors.js';
 
+// leitura de modelos 3d
+// ------------------------------------------------------------ //
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+// ------------------------------------------------------------ //
+
 const makeActor = (spec, shadow) => (spec.especie ? makeAnimal(spec, shadow) : makeCharacter(spec, shadow));
 
 const $ = (id) => document.getElementById(id);
@@ -128,6 +133,42 @@ function rayWalls(ox, oz, dx, dz, lv = 0) {
   }
   return best;
 }
+
+
+
+// ------------------------ //
+// test de import de modelo 3d //
+const loader = new GLTFLoader();
+
+
+
+loader.load(
+   `./formadoida.glb`,
+   function (gltf) {
+//     //If the file is loaded, add it to the scene
+     let objecte = gltf.scene;
+     objecte.position.set(10, 1, -10); 
+     scene.add(objecte);
+   },
+   function (xhr) {
+//     //While it is loading, log the progress
+     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+   },
+   function (error) {
+//     //If there is an error, log it
+     console.error(error);
+   }
+ );
+
+// ------------------------ //
+
+
+
+
+
+
+
+
 
 // ───────────── Som (sintetizado, sem arquivos) ─────────────
 const Snd = {

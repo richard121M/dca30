@@ -143,7 +143,7 @@ const loader = new GLTFLoader();
 
 
 loader.load(
-   `./modelos/cenario_dca2.glb`,
+   `./modelos/cenario_dca.glb`,
    function (gltf) {
 //     //If the file is loaded, add it to the scene
      let objecte = gltf.scene;

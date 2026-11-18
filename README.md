@@ -1,3 +1,16 @@
+link do jogo da versão do fork : https://richard121m.github.io/dca30/
+objetivo do fork
+  adicionar o pulo
+  mudar a geração do 3d do jog
+  mudar a geração das texturas
+
+pq?
+  A versão criada pela ia não gerou 3d reais, modelos 3d que são possiveis de abrir em um programa de modelagem,
+  invés disso, ela gerou um código gigantesco que gera de cubo a cubo cada modelo, algo impressionante, porém para
+  fazer qualquer alteração teria que pedir para a IA ou ir na luta e descobrir qua linha é responsável por gerar o quadrado 
+  que você quer alterar, além disso o jogo não tem texturas, a IA gera as texturas através de um noiser algo que fica 
+  extremamente difícil de uma pessoa alterar.
+  em resumo impressionado pelo que a IA conseguiu gerar, mas triste pela baixa compatibilidade com modelos 3d  
 # DCA 30 Anos · Grande Tour da Automação
 
 Prova de conceito de um jogo 3D em terceira pessoa que roda direto no navegador. O cenário é o prédio do DCA/UFRN (LECA). O bloco dos professores e o foyer seguem a planta do projeto executivo de arquitetura, e a galeria foi modelada a partir de vídeos gravados no local. Feito para o III SAS (12 e 13 de novembro de 2026), que celebra os 30 anos do curso de Engenharia de Computação.
